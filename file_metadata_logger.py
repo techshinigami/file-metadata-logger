@@ -20,7 +20,7 @@ def get_file_metadata(file_path: str) -> dict:
     file_stats = stat(file_path)  # Get file statistics
     file_permissions_absolute = oct(file_stats.st_mode)[-3:]  # Extract file permissions in octal format
     file_permissions = absolute_to_symbolic(file_permissions_absolute)  # Convert to symbolic format
-    file_birth_time = ctime(file_stats.st_birthtime)  # Get file birth time in readable format
+    file_birth_time = ctime(get_birth_time(file_path))  # Get file birth time in readable format
     file_access_time = ctime(file_stats.st_atime)  # Get file access time in readable format
     file_mod_time = ctime(file_stats.st_mtime)  # Get file modification time in readable format
 
