@@ -128,5 +128,5 @@ def generate_json_log(file_paths: list) -> None:
 
 
 if __name__ == "__main__":
-    file_list = ["foo"]  # List of files to process (example: replace "foo" with actual file paths)
-    generate_json_log(file_list)  # Generate the JSON log
+    file_path_list = ["foo", "bar"]  # List of files to process (example: replace "foo" with actual file paths)
+    generate_json_log(file_path_list)  # Generate the JSON log
