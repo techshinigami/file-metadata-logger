@@ -1,5 +1,5 @@
 from os import path, stat  # Importing modules for file path handling and file statistics
-from json import dump  # Importing module for writing JSON data
+from json import dumps  # Importing module for writing JSON data
 from time import ctime  # Importing module to convert time to a readable format
 from subprocess import check_output  # Importing module to execute shell commands
 
@@ -9,9 +9,9 @@ from hash_functions import md5_file, sha256_file  # Importing custom hash functi
 def get_file_metadata(file_path: str) -> dict:
     file_stats = stat(file_path)  # Get file statistics
     file_permissions_absolute = oct(file_stats.st_mode)[-3:]  # Extract file permissions in octal format
-    file_permissions = absolute_to_symbolic(file_permissions_absolute)  # Convert to symbolic format
+    # file_permissions = absolute_to_symbolic(file_permissions_absolute)  # Convert to symbolic format
     file_birth_time = ctime(get_birth_time(file_path))  # Get file birth time in readable format
-    # file_birth_time = ctime(file_stats.st_birthtime) # Get file birth time in windows
+    file_birth_time = ctime(file_stats.st_birthtime) # Get file birth time in windows
     file_access_time = ctime(file_stats.st_atime)  # Get file access time in readable format
     file_mod_time = ctime(file_stats.st_mtime)  # Get file modification time in readable format
 
@@ -55,31 +55,27 @@ def calculate_hashes(file_path: str) -> tuple:
 
     return md5_hash, sha256_hash
 
-
 def generate_json_log(file_paths: list) -> None:
-    logs = []  # Initialize an empty list to store log entries
+    with open("log.json", "w") as log_file:  # Open the JSON file for writing
+        for file in file_paths:  # Iterate over each file in the list
+            file_name = path.basename(file)  # Get the file name from the path
+            md5, sha256 = calculate_hashes(file)  # Calculate MD5 and SHA256 hashes
+            metadata = get_file_metadata(file)  # Retrieve file metadata
 
-    for file in file_paths:  # Iterate over each file in the list
-        file_name = path.basename(file)  # Get the file name from the path
-        md5, sha256 = calculate_hashes(file)  # Calculate MD5 and SHA256 hashes
-        metadata = get_file_metadata(file)  # Retrieve file metadata
+            # Create a log entry as a dictionary
+            log = {
+                "file_name": file_name,
+                "md5_hash": md5,
+                "sha256_hash": sha256,
+                "file_permissions": metadata["file_permissions"],
+                "file_permissions_absolute": metadata["file_permissions_absolute"],
+                "file_birth_time": metadata["file_birth_time"],
+                "file_access_time": metadata["file_access_time"],
+                "file_mod_time": metadata["file_mod_time"]
+            }
 
-        # Create a log entry as a dictionary
-        log = {
-            "file_name": file_name,
-            "md5_hash": md5,
-            "sha256_hash": sha256,
-            "file_permissions": metadata["file_permissions"],
-            "file_permissions_absolute": metadata["file_permissions_absolute"],
-            "file_birth_time": metadata["file_birth_time"],
-            "file_access_time": metadata["file_access_time"],
-            "file_mod_time": metadata["file_mod_time"]
-        }
-
-        logs.append(log)  # Add the log entry to the list
-
-    with open("log.json", "w") as log_file:  # Open a JSON file for writing
-        dump(logs, log_file, indent=4)  # Write the log entries to the file in JSON format
+            # Write each log entry as a JSON object on a new line
+            log_file.write(dumps(log) + "\n")
 
 
 if __name__ == "__main__":
