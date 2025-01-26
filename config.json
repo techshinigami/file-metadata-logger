@@ -1,0 +1,4 @@
+{
+    "directories": ["dir1", "dir2"],
+    "scan_interval": 60
+}

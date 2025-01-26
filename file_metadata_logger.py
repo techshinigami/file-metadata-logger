@@ -1,6 +1,7 @@
-from os import path, stat  # Importing modules for file path handling and file statistics
-from json import dumps  # Importing module for writing JSON data
-from time import ctime  # Importing module to convert time to a readable format
+from os import path, stat, walk, makedirs  # Importing modules for file path handling and file statistics
+from json import dump, load  # Importing module for writing JSON data
+from time import ctime, sleep  # Importing module to convert time to a readable format
+from datetime import datetime
 from subprocess import check_output  # Importing module to execute shell commands
 
 from hash_functions import md5_file, sha256_file  # Importing custom hash functions for MD5 and SHA256
@@ -56,7 +57,13 @@ def calculate_hashes(file_path: str) -> tuple:
     return md5_hash, sha256_hash
 
 def generate_json_log(file_paths: list) -> None:
-    with open("log.json", "w") as log_file:  # Open the JSON file for writing
+    # Ensure the logs directory exists
+    makedirs("logs", exist_ok=True)
+    
+    # Get the current date and time in YYYY-MM-DD_HH-MM-SS format
+    current_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    log_file_name = f"log_{current_timestamp}.ndjson"
+    with open(f"logs/{log_file_name}", "w") as log_file:  # Open the JSON file for writing
         for file in file_paths:  # Iterate over each file in the list
             file_name = path.basename(file)  # Get the file name from the path
             md5, sha256 = calculate_hashes(file)  # Calculate MD5 and SHA256 hashes
@@ -75,9 +82,38 @@ def generate_json_log(file_paths: list) -> None:
             }
 
             # Write each log entry as a JSON object on a new line
-            log_file.write(dumps(log) + "\n")
+            dump(log, log_file)
+            log_file.write("\n")
+
+
+def get_all_files(directories: list) -> list:
+    file_paths = []
+    for directory in directories:
+        for root, _, files in walk(directory):
+            for file in files:
+                file_paths.append(path.join(root, file))
+    return file_paths
+
+
+def main():
+    # Load configuration
+    with open("config.json", "r") as config_file:
+        config = load(config_file)
+
+    directories = config.get("directories", [])
+    scan_interval = config.get("scan_interval", 600)
+
+    if not directories:
+        print("No directories specified in the configuration.")
+        return
+
+    while True:
+        print(f"Scanning directories: {directories}")
+        file_paths = get_all_files(directories)
+        generate_json_log(file_paths)
+        print(f"Scan complete. Waiting for {scan_interval} seconds.")
+        sleep(scan_interval)
 
 
 if __name__ == "__main__":
-    file_path_list = ["foo", "bar"]  # List of files to process (example: replace "foo" with actual file paths)
-    generate_json_log(file_path_list)  # Generate the JSON log
+    main()
