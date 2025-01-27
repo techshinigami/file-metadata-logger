@@ -55,6 +55,30 @@ def calculate_hashes(file_path: str) -> tuple:
 
     return md5_hash, sha256_hash
 
+
+def is_malware(md5_hash: str, sha256_hash: str) -> bool:
+    # Initialize sets to store MD5 and SHA-256 hashes
+    md5_hashes = set()
+    sha256_hashes = set()
+
+    # Read and process MD5 hashes from the file
+    with open("full_md5.txt", "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                md5_hashes.add(line)
+
+    # Read and process SHA-256 hashes from the file
+    with open("full_sha256.txt", "r") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#"):
+                sha256_hashes.add(line)
+    
+    # Check if either hash is in the respective set
+    return md5_hash in md5_hashes or sha256_hash in sha256_hashes
+
+
 def generate_json_log(file_paths: list, log_directory) -> None:
     # Ensure the logs directory exists
     makedirs(log_directory, exist_ok=True)
@@ -66,6 +90,7 @@ def generate_json_log(file_paths: list, log_directory) -> None:
             file_name = path.basename(file)  # Get the file name from the path
             file_path = path.abspath(file) # Get the absolute path of the file
             md5, sha256 = calculate_hashes(file)  # Calculate MD5 and SHA256 hashes
+            is_malware_result = is_malware(md5, sha256)
             metadata = get_file_metadata(file)  # Retrieve file metadata
 
             # Create a log entry as a dictionary
@@ -74,6 +99,7 @@ def generate_json_log(file_paths: list, log_directory) -> None:
                 "file_path": file_path,
                 "md5_hash": md5,
                 "sha256_hash": sha256,
+                "is_malware": is_malware_result,
                 "file_permissions": metadata["file_permissions"],
                 "file_permissions_absolute": metadata["file_permissions_absolute"],
                 "file_birth_time": metadata["file_birth_time"],
