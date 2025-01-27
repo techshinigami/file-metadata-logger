@@ -1,7 +1,6 @@
 from os import path, stat, walk, makedirs  # Importing modules for file path handling and file statistics
 from json import dump, load  # Importing module for writing JSON data
 from time import ctime, sleep  # Importing module to convert time to a readable format
-from datetime import datetime
 from subprocess import check_output  # Importing module to execute shell commands
 
 from hash_functions import md5_file, sha256_file  # Importing custom hash functions for MD5 and SHA256
@@ -56,22 +55,23 @@ def calculate_hashes(file_path: str) -> tuple:
 
     return md5_hash, sha256_hash
 
-def generate_json_log(file_paths: list) -> None:
+def generate_json_log(file_paths: list, log_directory) -> None:
     # Ensure the logs directory exists
-    makedirs("logs", exist_ok=True)
+    makedirs(log_directory, exist_ok=True)
     
-    # Get the current date and time in YYYY-MM-DD_HH-MM-SS format
-    current_timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_file_name = f"log_{current_timestamp}.ndjson"
-    with open(f"logs/{log_file_name}", "w") as log_file:  # Open the JSON file for writing
+    log_file_name = "log.ndjson"
+    log_file_path = path.join(log_directory, log_file_name)
+    with open(log_file_path, "w") as log_file:  # Open the JSON file for writing
         for file in file_paths:  # Iterate over each file in the list
             file_name = path.basename(file)  # Get the file name from the path
+            file_path = path.abspath(file) # Get the absolute path of the file
             md5, sha256 = calculate_hashes(file)  # Calculate MD5 and SHA256 hashes
             metadata = get_file_metadata(file)  # Retrieve file metadata
 
             # Create a log entry as a dictionary
             log = {
                 "file_name": file_name,
+                "file_path": file_path,
                 "md5_hash": md5,
                 "sha256_hash": sha256,
                 "file_permissions": metadata["file_permissions"],
@@ -102,6 +102,7 @@ def main():
 
     directories = config.get("directories", [])
     scan_interval = config.get("scan_interval", 600)
+    log_directory = config.get("log_directory", "logs")
 
     if not directories:
         print("No directories specified in the configuration.")
@@ -110,7 +111,7 @@ def main():
     while True:
         print(f"Scanning directories: {directories}")
         file_paths = get_all_files(directories)
-        generate_json_log(file_paths)
+        generate_json_log(file_paths, log_directory)
         print(f"Scan complete. Waiting for {scan_interval} seconds.")
         sleep(scan_interval)
 
